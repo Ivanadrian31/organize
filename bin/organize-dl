@@ -26,9 +26,13 @@ Options:
   -n, --dry-run   print the plan without moving anything
   -h, --help      show this help and exit
   -V, --version   show the version and exit
+  --device        show the storage device, filesystem and free space of DIRECTORY
   --              end of options; use before a DIRECTORY starting with '-'
 
 Options must come before DIRECTORY.
+
+With --device the program reports where DIRECTORY lives and exits without
+moving a file.
 
 Categories and extensions (case-insensitive):
   Images     $EXT_IMAGES
@@ -105,14 +109,28 @@ nama_tujuan() {
 	TUJUAN=$calon
 }
 
+# device_info DIR - print the storage device behind DIR
+device_info() {
+	local dir=$1
+	printf 'device: %s\n' "$(findmnt -n -o SOURCE -T "$dir" 2>/dev/null || printf unknown)"
+	printf 'mount: %s\n' "$(findmnt -n -o TARGET -T "$dir" 2>/dev/null || printf unknown)"
+	printf 'fstype: %s\n' "$(findmnt -n -o FSTYPE -T "$dir" 2>/dev/null || printf unknown)"
+	df -hP "$dir"
+}
+
 main() {
-	local dir=$1 dry=$2
+	local dir=$1 dry=$2 device=$3
 	local -a berkas=()
 	local f nama ekst total=0 gagal=0
 
 	if [[ ! -d $dir ]]; then
 		printf '%s: directory "%s" not found\n' "$PROG" "$dir" >&2
 		exit 3
+	fi
+
+	if ((device)); then
+		device_info "$dir"
+		exit 0
 	fi
 
 	# Pathname expansion already sorts with LC_ALL=C, so the run is stable.
@@ -188,10 +206,15 @@ main() {
 }
 
 dry=0
+device=0
 while (($#)); do
 	case $1 in
 	-n | --dry-run)
 		dry=1
+		shift
+		;;
+	--device)
+		device=1
 		shift
 		;;
 	-h | --help)
@@ -219,4 +242,4 @@ if (($# > 1)); then
 	die_opsi "unexpected argument \"$2\""
 fi
 
-main "${1:-${HOME:-}/Downloads}" "$dry"
+main "${1:-${HOME:-}/Downloads}" "$dry" "$device"
