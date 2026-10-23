@@ -1,0 +1,17 @@
+# shellcheck shell=bash
+# bash completion for organize-dl
+_organize_dl() {
+	local cur
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	case $cur in
+	-*)
+		mapfile -t COMPREPLY < <(compgen -W "-n --dry-run -h --help -V --version --" -- "$cur")
+		;;
+	*)
+		mapfile -t COMPREPLY < <(compgen -d -- "$cur")
+		;;
+	esac
+}
+
+complete -F _organize_dl organize-dl
