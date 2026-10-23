@@ -3,3 +3,4 @@ dist/
 *.deb
 docs/PLAN.md
 docs/AGENT.md
+docs/HANDOFF.md
