@@ -41,6 +41,22 @@ Rules it never breaks:
 - **One bad file does not stop the run.** A file that cannot be moved is
   reported on stderr, the rest are still processed, and the exit status is 1.
 
+## Which device holds the files
+
+`--device` reports where the target directory lives: the block device, the
+mount point, the filesystem and the free space, using `findmnt` and `df`.
+It prints the report and exits, so no file is moved. It wins over
+`--dry-run`.
+
+```
+$ organize-dl --device ~/Downloads
+device: /dev/nvme0n1p2
+mount: /
+fstype: ext4
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/nvme0n1p2  468G  312G  133G  71% /
+```
+
 ## Install
 
 ### Debian package (Ubuntu 22.04 / 24.04)
@@ -71,6 +87,7 @@ make install PREFIX="$HOME/.local"   # no sudo
 organize-dl [OPTIONS] [DIRECTORY]
 
   -n, --dry-run   print the plan without moving anything
+  --device        show the storage device, filesystem and free space
   -h, --help      show help
   -V, --version   show the version
   --              end of options, for a DIRECTORY starting with '-'

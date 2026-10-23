@@ -6,7 +6,7 @@ _organize_dl() {
 
 	case $cur in
 	-*)
-		mapfile -t COMPREPLY < <(compgen -W "-n --dry-run -h --help -V --version --" -- "$cur")
+		mapfile -t COMPREPLY < <(compgen -W "-n --dry-run --device -h --help -V --version --" -- "$cur")
 		;;
 	*)
 		mapfile -t COMPREPLY < <(compgen -d -- "$cur")

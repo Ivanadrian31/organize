@@ -198,3 +198,20 @@ teardown() {
 	assert_dir "$DL/Images/a.jpg"
 	assert_file "$DL/Images/a_1.jpg"
 }
+
+@test "device reports the storage device of the directory" {
+	buat "$DL" a.jpg
+	run "$BIN" --device "$DL"
+	[ "$status" -eq 0 ]
+	[[ $output == *device:* ]]
+	[[ $output == *mount:* ]]
+	[[ $output == *fstype:* ]]
+	[[ $output == *Filesystem* ]]
+	assert_file "$DL/a.jpg"
+	assert_absent "$DL/Images"
+}
+
+@test "device with a missing directory exits 3" {
+	run "$BIN" --device "$DL/nope"
+	[ "$status" -eq 3 ]
+}

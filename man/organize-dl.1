@@ -49,6 +49,11 @@ Print usage information and exit.
 .BR \-V ", " \-\-version
 Print the version and exit.
 .TP
+.B \-\-device
+Print the storage device, mount point, filesystem and free space of
+.IR DIRECTORY ,
+then exit without moving any file.
+.TP
 .B \-\-
 End of options. Use it when
 .I DIRECTORY
@@ -121,6 +126,14 @@ Preview what would happen, without moving anything:
 .RS
 .EX
 organize-dl --dry-run
+.EE
+.RE
+.PP
+Show which storage device holds the files, and how much space is left:
+.PP
+.RS
+.EX
+organize-dl --device ~/Downloads
 .EE
 .RE
 .PP

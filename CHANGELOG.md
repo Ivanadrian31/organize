@@ -11,6 +11,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Move files from one directory into `Images`, `Documents`, `Music`,
   `Videos`, `Archives` and `Others`, chosen from the file extension.
 - `--dry-run` to print the plan without moving anything.
+- `--device` prints the storage device, mount point, filesystem and free
+  space of the target directory.
 - Numeric suffix on collisions (`photo_1.jpg`), never overwriting.
 - Compound archive extensions kept whole (`backup_1.tar.gz`).
 - Debian package, man page and bash completion.
