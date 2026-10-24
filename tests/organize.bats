@@ -72,12 +72,67 @@ teardown() {
 	assert_file "$DL/Images/FOTO.JPG"
 }
 
-@test "dry-run prints the plan and moves nothing" {
-	buat "$DL" a.jpg
-	run "$BIN" --dry-run "$DL"
+@test "no argument uses the current directory" {
+	buat "$DL" a.jpg b.pdf
+	cd "$DL"
+	run "$BIN"
 	[ "$status" -eq 0 ]
-	[ "$output" = "[dry-run] a.jpg -> Images/a.jpg
+	assert_file "$DL/Images/a.jpg"
+	assert_file "$DL/Documents/b.pdf"
+}
+
+@test "preview prints the plan and moves nothing" {
+	buat "$DL" a.jpg
+	run "$BIN" --preview "$DL"
+	[ "$status" -eq 0 ]
+	[ "$output" = "[preview] a.jpg -> Images/a.jpg
 1 file would be moved: Images 1." ]
+	assert_file "$DL/a.jpg"
+	assert_absent "$DL/Images"
+}
+
+@test "preview short flag works" {
+	buat "$DL" a.jpg
+	run "$BIN" -p "$DL"
+	[ "$status" -eq 0 ]
+	[[ $output == '[preview] a.jpg -> Images/a.jpg'* ]]
+	assert_file "$DL/a.jpg"
+}
+
+@test "preview combined with a category only shows that category" {
+	buat "$DL" a.jpg b.pdf c.mp3
+	run "$BIN" --preview --images "$DL"
+	[ "$status" -eq 0 ]
+	[ "$output" = "[preview] a.jpg -> Images/a.jpg
+1 file would be moved: Images 1." ]
+}
+
+@test "a category option moves only that category" {
+	buat "$DL" a.jpg b.pdf c.mp3
+	run "$BIN" --images "$DL"
+	[ "$status" -eq 0 ]
+	assert_file "$DL/Images/a.jpg"
+	assert_file "$DL/b.pdf"
+	assert_file "$DL/c.mp3"
+	assert_absent "$DL/Documents"
+	assert_absent "$DL/Music"
+}
+
+@test "several category options can be combined" {
+	buat "$DL" a.jpg b.pdf c.mp3
+	run "$BIN" --images --documents "$DL"
+	[ "$status" -eq 0 ]
+	assert_file "$DL/Images/a.jpg"
+	assert_file "$DL/Documents/b.pdf"
+	assert_file "$DL/c.mp3"
+	assert_absent "$DL/Music"
+}
+
+@test "others option moves only unclassified files" {
+	buat "$DL" a.jpg b.xyz
+	run "$BIN" --others "$DL"
+	[ "$status" -eq 0 ]
+	assert_file "$DL/Others/b.xyz"
 	assert_file "$DL/a.jpg"
 	assert_absent "$DL/Images"
 }
@@ -134,6 +189,68 @@ teardown() {
 	assert_absent "$DL/Images/link.jpg"
 }
 
+@test "partial downloads are skipped" {
+	buat "$DL" a.part b.crdownload c.download d.tmp e.filepart
+	run "$BIN" "$DL"
+	[ "$status" -eq 0 ]
+	[ "$output" = "Moved 0 files." ]
+	assert_file "$DL/a.part"
+	assert_file "$DL/b.crdownload"
+	assert_file "$DL/c.download"
+	assert_file "$DL/d.tmp"
+	assert_file "$DL/e.filepart"
+	assert_absent "$DL/Others"
+}
+
+@test "partial downloads stay put even with others" {
+	buat "$DL" a.part b.xyz
+	run "$BIN" --others "$DL"
+	[ "$status" -eq 0 ]
+	assert_file "$DL/a.part"
+	assert_file "$DL/Others/b.xyz"
+}
+
+@test "a system directory is refused with exit 4" {
+	buat "$DL" a.jpg
+	run "$BIN" /etc
+	[ "$status" -eq 4 ]
+	[[ $output == *'refusing to work on'* ]]
+}
+
+@test "the home directory is refused with exit 4" {
+	buat "$DL" a.jpg
+	cd "$DL"
+	run env HOME="$DL" "$BIN"
+	[ "$status" -eq 4 ]
+	[[ $output == *'system directory'* ]]
+	assert_file "$DL/a.jpg"
+	assert_absent "$DL/Images"
+}
+
+@test "the root of a git repository is refused with exit 4" {
+	mkdir -p "$DL/.git"
+	buat "$DL" a.jpg
+	run "$BIN" "$DL"
+	[ "$status" -eq 4 ]
+	[[ $output == *'git repository'* ]]
+	assert_file "$DL/a.jpg"
+	assert_absent "$DL/Images"
+}
+
+@test "a subdirectory of a git repository is still processed" {
+	mkdir -p "$DL/.git" "$DL/sub"
+	buat "$DL/sub" a.jpg
+	run "$BIN" "$DL/sub"
+	[ "$status" -eq 0 ]
+	assert_file "$DL/sub/Images/a.jpg"
+}
+
+@test "device still works on a refused directory" {
+	run "$BIN" --device /etc
+	[ "$status" -eq 0 ]
+	[[ $output == *'device:'* ]]
+}
+
 @test "custom directory argument is used" {
 	local lain
 	lain=$(mktemp -d)
@@ -154,6 +271,13 @@ teardown() {
 	run "$BIN" --bogus
 	[ "$status" -eq 2 ]
 	[[ $output == *'unknown option'* ]]
+}
+
+@test "dry-run is reported as renamed" {
+	run "$BIN" --dry-run "$DL"
+	[ "$status" -eq 2 ]
+	[[ $output == *'renamed'* ]]
+	[[ $output == *'--preview'* ]]
 }
 
 @test "double dash allows a directory starting with a dash" {
@@ -214,4 +338,27 @@ teardown() {
 @test "device with a missing directory exits 3" {
 	run "$BIN" --device "$DL/nope"
 	[ "$status" -eq 3 ]
+}
+
+@test "the wrapper warns and still moves files" {
+	buat "$DL" a.jpg
+	run "$BIN_DL" "$DL"
+	[ "$status" -eq 0 ]
+	[[ ${lines[0]} == *'deprecated'* ]]
+	assert_file "$DL/Images/a.jpg"
+}
+
+@test "the wrapper turns dry-run into preview" {
+	buat "$DL" a.jpg
+	run "$BIN_DL" --dry-run "$DL"
+	[ "$status" -eq 0 ]
+	[[ $output == *'[preview] a.jpg -> Images/a.jpg'* ]]
+	assert_file "$DL/a.jpg"
+	assert_absent "$DL/Images"
+}
+
+@test "the wrapper reports the version of organize" {
+	run "$BIN_DL" --version
+	[ "$status" -eq 0 ]
+	[[ $output == *'organize 0.2.0'* ]]
 }

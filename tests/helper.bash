@@ -2,7 +2,9 @@
 # Shared helpers for the bats suite.
 
 # shellcheck disable=SC2034 # read by tests/*.bats, which shellcheck cannot see
-BIN="$BATS_TEST_DIRNAME/../bin/organize-dl"
+BIN="$BATS_TEST_DIRNAME/../bin/organize"
+# shellcheck disable=SC2034 # read by tests/*.bats, which shellcheck cannot see
+BIN_DL="$BATS_TEST_DIRNAME/../bin/organize-dl"
 
 # buat DIR NAME... creates empty files inside DIR
 buat() {

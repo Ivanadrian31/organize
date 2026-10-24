@@ -1,6 +1,6 @@
-VERSION := 0.1.0
+VERSION := 0.2.0
 SHELL := /bin/bash
-PKG := organize-dl_$(VERSION)_all
+PKG := organize_$(VERSION)_all
 BUILD := build
 DIST := dist
 PKGDIR := $(BUILD)/$(PKG)
@@ -15,16 +15,17 @@ COMPDIR ?= $(PREFIX)/share/bash-completion/completions
 all: check
 
 check:
-	shellcheck --severity=style -x bin/organize-dl completions/organize-dl tests/helper.bash
+	shellcheck --severity=style -x bin/organize bin/organize-dl completions/organize tests/helper.bash
 	bats tests/*.bats
 
 man:
+	@! groff -man -Tutf8 -ww -z man/organize.1 2>&1 >/dev/null | grep -q .
 	@! groff -man -Tutf8 -ww -z man/organize-dl.1 2>&1 >/dev/null | grep -q .
 
 versi:
-	@v_bin=$$(sed -n 's/^readonly VERSION="\(.*\)"$$/\1/p' bin/organize-dl); \
+	@v_bin=$$(sed -n 's/^readonly VERSION="\(.*\)"$$/\1/p' bin/organize); \
 	v_ctl=$$(sed -n 's/^Version: //p' debian/control); \
-	v_chg=$$(sed -n '1s/^organize-dl (\(.*\)).*/\1/p' debian/changelog); \
+	v_chg=$$(sed -n '1s/^organize (\(.*\)).*/\1/p' debian/changelog); \
 	if [ "$$v_bin" != "$(VERSION)" ] || [ "$$v_ctl" != "$(VERSION)" ] || [ "$$v_chg" != "$(VERSION)" ]; then \
 	  echo "versi tidak sinkron: make=$(VERSION) bin=$$v_bin control=$$v_ctl changelog=$$v_chg" >&2; \
 	  exit 1; \
@@ -36,15 +37,18 @@ deb: check
 	install -d "$(PKGDIR)/DEBIAN" "$(PKGDIR)/usr/bin" \
 	  "$(PKGDIR)/usr/share/man/man1" \
 	  "$(PKGDIR)/usr/share/bash-completion/completions" \
-	  "$(PKGDIR)/usr/share/doc/organize-dl"
+	  "$(PKGDIR)/usr/share/doc/organize"
+	install -m755 bin/organize "$(PKGDIR)/usr/bin/organize"
 	install -m755 bin/organize-dl "$(PKGDIR)/usr/bin/organize-dl"
+	install -m644 man/organize.1 "$(PKGDIR)/usr/share/man/man1/organize.1"
+	gzip -9n "$(PKGDIR)/usr/share/man/man1/organize.1"
 	install -m644 man/organize-dl.1 "$(PKGDIR)/usr/share/man/man1/organize-dl.1"
 	gzip -9n "$(PKGDIR)/usr/share/man/man1/organize-dl.1"
-	install -m644 completions/organize-dl \
-	  "$(PKGDIR)/usr/share/bash-completion/completions/organize-dl"
-	install -m644 debian/copyright "$(PKGDIR)/usr/share/doc/organize-dl/copyright"
-	install -m644 debian/changelog "$(PKGDIR)/usr/share/doc/organize-dl/changelog"
-	gzip -9n "$(PKGDIR)/usr/share/doc/organize-dl/changelog"
+	install -m644 completions/organize \
+	  "$(PKGDIR)/usr/share/bash-completion/completions/organize"
+	install -m644 debian/copyright "$(PKGDIR)/usr/share/doc/organize/copyright"
+	install -m644 debian/changelog "$(PKGDIR)/usr/share/doc/organize/changelog"
+	gzip -9n "$(PKGDIR)/usr/share/doc/organize/changelog"
 	install -m644 debian/control "$(PKGDIR)/DEBIAN/control"
 	sed -i "s/^Installed-Size:.*/Installed-Size: $$(du -sk "$(PKGDIR)" | cut -f1)/" \
 	  "$(PKGDIR)/DEBIAN/control"
@@ -59,14 +63,18 @@ uji-pasang: deb
 
 install:
 	install -d "$(DESTDIR)$(BINDIR)" "$(DESTDIR)$(MANDIR)" "$(DESTDIR)$(COMPDIR)"
+	install -m755 bin/organize "$(DESTDIR)$(BINDIR)/organize"
 	install -m755 bin/organize-dl "$(DESTDIR)$(BINDIR)/organize-dl"
+	install -m644 man/organize.1 "$(DESTDIR)$(MANDIR)/organize.1"
 	install -m644 man/organize-dl.1 "$(DESTDIR)$(MANDIR)/organize-dl.1"
-	install -m644 completions/organize-dl "$(DESTDIR)$(COMPDIR)/organize-dl"
+	install -m644 completions/organize "$(DESTDIR)$(COMPDIR)/organize"
 
 uninstall:
-	rm -f "$(DESTDIR)$(BINDIR)/organize-dl" \
+	rm -f "$(DESTDIR)$(BINDIR)/organize" \
+	  "$(DESTDIR)$(BINDIR)/organize-dl" \
+	  "$(DESTDIR)$(MANDIR)/organize.1" \
 	  "$(DESTDIR)$(MANDIR)/organize-dl.1" \
-	  "$(DESTDIR)$(COMPDIR)/organize-dl"
+	  "$(DESTDIR)$(COMPDIR)/organize"
 
 bersih:
 	rm -rf "$(BUILD)" "$(DIST)"
