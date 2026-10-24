@@ -1,3 +1,18 @@
+organize (0.2.0) unstable; urgency=medium
+
+  * Rename the command from organize-dl to organize. organize-dl stays as a
+    deprecated wrapper that forwards its arguments and turns --dry-run into
+    --preview.
+  * Default to the current directory instead of ~/Downloads.
+  * Add --preview, which replaces --dry-run.
+  * Add --images, --documents, --music, --videos, --archives and --others to
+    restrict a run to one or more categories.
+  * Refuse system directories and the root of a git repository with exit 4.
+  * Skip files that a download manager is still writing.
+  * The package is now named organize and replaces organize-dl.
+
+ -- Ivanadrian31 <ivanadrian31@users.noreply.github.com>  Sat, 24 Oct 2026 09:00:00 +0700
+
 organize-dl (0.1.0) unstable; urgency=medium
 
   * Initial release.

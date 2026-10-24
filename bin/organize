@@ -1,0 +1,321 @@
+#!/usr/bin/env bash
+# organize - sort the files of one directory into category subfolders.
+set -euo pipefail
+IFS=$'\n\t'
+export LC_ALL=C
+
+readonly PROG=${0##*/}
+readonly VERSION="0.2.0"
+
+readonly EXT_IMAGES="jpg jpeg png gif bmp webp svg tif tiff heic avif"
+readonly EXT_DOCUMENTS="pdf doc docx xls xlsx ppt pptx txt md rtf odt ods odp csv epub"
+readonly EXT_MUSIC="mp3 wav flac aac ogg m4a opus wma"
+readonly EXT_VIDEOS="mp4 mkv avi mov webm m4v wmv flv"
+readonly EXT_ARCHIVES="zip rar 7z tar gz bz2 xz tgz iso"
+
+# Files a download manager is still writing. They are skipped, never moved.
+readonly EXT_PARTIAL="part crdownload download tmp filepart"
+
+# Order matters: it is the order used in the summary line.
+readonly CATEGORIES=(Images Documents Music Videos Archives Others)
+
+# Sorted directories are always a mistake, so they are refused outright.
+# Each entry is compared after readlink -f, and /bin, /sbin and /lib are
+# symlinks into /usr on Ubuntu, so the list is resolved the same way.
+readonly DENY_DIRS=(/ /etc /usr /var /bin /sbin /lib /opt /srv /boot /dev /proc /sys /run)
+
+usage() {
+	cat <<EOF
+Usage: $PROG [OPTIONS] [DIRECTORY]
+
+Move files in DIRECTORY (default: the current directory) into category
+subfolders.
+
+Options:
+  -p, --preview   print the plan without moving anything
+  --images        only handle Images
+  --documents     only handle Documents
+  --music         only handle Music
+  --videos        only handle Videos
+  --archives      only handle Archives
+  --others        only handle Others
+  --device        show the storage device, filesystem and free space of DIRECTORY
+  -h, --help      show this help and exit
+  -V, --version   show the version and exit
+  --              end of options; use before a DIRECTORY starting with '-'
+
+Options must come before DIRECTORY.
+
+Without a category option every category is handled. With one or more
+category options only those categories are handled, and files of the other
+categories stay where they are.
+
+Files that a download manager is still writing are always skipped, even with
+--others: .part, .crdownload, .download, .tmp and .filepart.
+
+With --device the program reports where DIRECTORY lives and exits without
+moving a file.
+
+Categories and extensions (case-insensitive):
+  Images     $EXT_IMAGES
+  Documents  $EXT_DOCUMENTS
+  Music      $EXT_MUSIC
+  Videos     $EXT_VIDEOS
+  Archives   $EXT_ARCHIVES
+  Others     everything else
+
+Only regular files directly inside DIRECTORY are moved. Hidden files,
+subdirectories and symlinks are left alone. An existing file is never
+overwritten: a collision becomes name_1.ext, name_2.ext, and so on.
+
+DIRECTORY is refused when it is a system directory or the root of a git
+repository, so a stray run cannot scatter files that belong to the system.
+
+Exit status:
+  0  success
+  1  at least one file could not be moved
+  2  invalid option or argument
+  3  DIRECTORY does not exist or is not a directory
+  4  DIRECTORY is a system directory or the root of a git repository
+EOF
+}
+
+die_opsi() {
+	printf '%s: %s\n' "$PROG" "$1" >&2
+	printf "Try '%s --help' for more information.\n" "$PROG" >&2
+	exit 2
+}
+
+# kategori_untuk EXT -> sets KATEGORI
+kategori_untuk() {
+	local e=$1
+	if [[ -z $e ]]; then
+		KATEGORI=Others
+		return 0
+	fi
+	case " $EXT_IMAGES " in *" $e "*) KATEGORI=Images; return 0 ;; esac
+	case " $EXT_DOCUMENTS " in *" $e "*) KATEGORI=Documents; return 0 ;; esac
+	case " $EXT_MUSIC " in *" $e "*) KATEGORI=Music; return 0 ;; esac
+	case " $EXT_VIDEOS " in *" $e "*) KATEGORI=Videos; return 0 ;; esac
+	case " $EXT_ARCHIVES " in *" $e "*) KATEGORI=Archives; return 0 ;; esac
+	KATEGORI=Others
+}
+
+# pecah_nama NAME -> sets NAMA_DASAR and EKSTENSI
+# A compound archive extension stays in one piece: a.tar.gz -> a + .tar.gz
+pecah_nama() {
+	local nama=$1 ekst=""
+	case $nama in
+	*.tar.gz) ekst=".tar.gz" ;;
+	*.tar.bz2) ekst=".tar.bz2" ;;
+	*.tar.xz) ekst=".tar.xz" ;;
+	*.tar.zst) ekst=".tar.zst" ;;
+	*)
+		if [[ $nama == ?*.* ]]; then
+			ekst=".${nama##*.}"
+		fi
+		;;
+	esac
+	if [[ -n $ekst ]]; then
+		NAMA_DASAR=${nama%"$ekst"}
+	else
+		NAMA_DASAR=$nama
+	fi
+	EKSTENSI=$ekst
+}
+
+# nama_tujuan KANDIDAT_DIR -> sets TUJUAN to a free basename inside it
+nama_tujuan() {
+	local dir=$1 calon n=1
+	calon=$NAMA_DASAR$EKSTENSI
+	while [[ -e $dir/$calon || -L $dir/$calon ]]; do
+		calon="${NAMA_DASAR}_${n}${EKSTENSI}"
+		n=$((n + 1))
+	done
+	TUJUAN=$calon
+}
+
+# device_info DIR - print the storage device behind DIR
+device_info() {
+	local dir=$1
+	printf 'device: %s\n' "$(findmnt -n -o SOURCE -T "$dir" 2>/dev/null || printf unknown)"
+	printf 'mount: %s\n' "$(findmnt -n -o TARGET -T "$dir" 2>/dev/null || printf unknown)"
+	printf 'fstype: %s\n' "$(findmnt -n -o FSTYPE -T "$dir" 2>/dev/null || printf unknown)"
+	df -hP "$dir"
+}
+
+# tolak_direktori DIR - exit 4 when DIR must not be sorted
+tolak_direktori() {
+	local dir=$1 calon d
+	calon=$(readlink -f -- "$dir" 2>/dev/null || printf '%s' "$dir")
+	for d in "${DENY_DIRS[@]}" "${HOME:-}"; do
+		[[ -n $d ]] || continue
+		if [[ $calon == "$(readlink -f -- "$d" 2>/dev/null || printf '%s' "$d")" ]]; then
+			printf '%s: refusing to work on "%s": it is a system directory\n' \
+				"$PROG" "$calon" >&2
+			exit 4
+		fi
+	done
+	# .git is a directory in a normal clone and a file in a linked worktree.
+	if [[ -e $dir/.git ]]; then
+		printf '%s: refusing to work on "%s": it is the root of a git repository\n' \
+			"$PROG" "$calon" >&2
+		exit 4
+	fi
+}
+
+main() {
+	local dir=$1 preview=$2 device=$3
+	local -a berkas=()
+	local f nama ekst total=0 gagal=0
+	local -A hitung=()
+
+	if [[ ! -d $dir ]]; then
+		printf '%s: directory "%s" not found\n' "$PROG" "$dir" >&2
+		exit 3
+	fi
+
+	if ((device)); then
+		device_info "$dir"
+		exit 0
+	fi
+
+	tolak_direktori "$dir"
+
+	# Pathname expansion already sorts with LC_ALL=C, so the run is stable.
+	shopt -s nullglob
+	for f in "$dir"/*; do
+		[[ -L $f ]] && continue
+		[[ -f $f ]] || continue
+		berkas+=("$f")
+	done
+	shopt -u nullglob
+
+	local c
+	for c in "${CATEGORIES[@]}"; do
+		hitung[$c]=0
+	done
+
+	for f in "${berkas[@]}"; do
+		nama=${f##*/}
+		pecah_nama "$nama"
+		# Category comes from the last component: backup.tar.gz is a gz file.
+		ekst=${EKSTENSI##*.}
+
+		if [[ -n $EKSTENSI ]] && [[ " $EXT_PARTIAL " == *" ${ekst,,} "* ]]; then
+			continue
+		fi
+
+		kategori_untuk "${ekst,,}"
+
+		# A category option narrows the run; other categories stay put.
+		if ((hanya)) && [[ -z ${dipilih[$KATEGORI]:-} ]]; then
+			continue
+		fi
+
+		local tujuan_dir=$dir/$KATEGORI
+		nama_tujuan "$tujuan_dir"
+
+		if ((preview)); then
+			printf '[preview] %s -> %s/%s\n' "$nama" "$KATEGORI" "$TUJUAN"
+			hitung[$KATEGORI]=$((hitung[$KATEGORI] + 1))
+			total=$((total + 1))
+			continue
+		fi
+
+		if ! mkdir -p -- "$tujuan_dir" || [[ ! -d $tujuan_dir ]]; then
+			printf '%s: cannot create directory "%s"\n' "$PROG" "$tujuan_dir" >&2
+			gagal=$((gagal + 1))
+			continue
+		fi
+
+		if mv -- "$f" "$tujuan_dir/$TUJUAN"; then
+			printf '%s -> %s/%s\n' "$nama" "$KATEGORI" "$TUJUAN"
+			hitung[$KATEGORI]=$((hitung[$KATEGORI] + 1))
+			total=$((total + 1))
+		else
+			printf '%s: cannot move "%s"\n' "$PROG" "$nama" >&2
+			gagal=$((gagal + 1))
+		fi
+	done
+
+	local ringkas="" satuan="files"
+	((total == 1)) && satuan="file"
+	for c in "${CATEGORIES[@]}"; do
+		((hitung[$c] == 0)) && continue
+		ringkas+="${ringkas:+, }$c ${hitung[$c]}"
+	done
+
+	if ((preview)); then
+		printf '%d %s would be moved' "$total" "$satuan"
+	else
+		printf 'Moved %d %s' "$total" "$satuan"
+	fi
+	if [[ -n $ringkas ]]; then
+		printf ': %s' "$ringkas"
+	fi
+	printf '.\n'
+
+	if ((gagal > 0)); then
+		printf '%s: %d %s could not be moved.\n' "$PROG" "$gagal" \
+			"$([[ $gagal -eq 1 ]] && printf file || printf files)" >&2
+		exit 1
+	fi
+}
+
+preview=0
+device=0
+hanya=0
+declare -A dipilih=()
+
+while (($#)); do
+	case $1 in
+	-p | --preview)
+		preview=1
+		shift
+		;;
+	--images | --documents | --music | --videos | --archives | --others)
+		case $1 in
+		--images) dipilih[Images]=1 ;;
+		--documents) dipilih[Documents]=1 ;;
+		--music) dipilih[Music]=1 ;;
+		--videos) dipilih[Videos]=1 ;;
+		--archives) dipilih[Archives]=1 ;;
+		--others) dipilih[Others]=1 ;;
+		esac
+		hanya=1
+		shift
+		;;
+	--device)
+		device=1
+		shift
+		;;
+	-n | --dry-run)
+		die_opsi "option \"$1\" was renamed, use --preview"
+		;;
+	-h | --help)
+		usage
+		exit 0
+		;;
+	-V | --version)
+		printf '%s %s\n' "$PROG" "$VERSION"
+		exit 0
+		;;
+	--)
+		shift
+		break
+		;;
+	-?*)
+		die_opsi "unknown option \"$1\""
+		;;
+	*)
+		break
+		;;
+	esac
+done
+
+if (($# > 1)); then
+	die_opsi "unexpected argument \"$2\""
+fi
+
+main "${1:-.}" "$preview" "$device"

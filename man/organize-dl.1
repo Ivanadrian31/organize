@@ -1,153 +1,32 @@
-.TH ORGANIZE-DL 1 "2026-10-23" "organize-dl 0.1.0" "User Commands"
+.TH ORGANIZE-DL 1 "2026-10-24" "organize 0.2.0" "User Commands"
 .SH NAME
-organize-dl \- sort the files of a directory into category subfolders
+organize-dl \- deprecated name for organize
 .SH SYNOPSIS
 .B organize-dl
 [\fIOPTIONS\fR] [\fIDIRECTORY\fR]
 .SH DESCRIPTION
 .B organize-dl
-moves the regular files that sit directly inside
-.I DIRECTORY
-into subfolders chosen from the file extension.
-The default
-.I DIRECTORY
-is
-.IR ~/Downloads .
+is the name this program used before version 0.2.0. It is kept so that
+existing scripts and habits keep working.
 .PP
-Only the top level of
-.I DIRECTORY
-is read. Hidden files, subdirectories and symbolic links are never
-moved. Subfolders are created on demand, so a directory that only holds
-images ends up with a single
-.I Images
-subfolder.
+The command now prints a deprecation warning on standard error, then runs
+.BR organize (1)
+with the same arguments. The old
+.B \-\-dry\-run
+and
+.B \-n
+options are translated to
+.BR \-\-preview .
 .PP
-A file is never overwritten. If the destination name is already taken,
-a numeric suffix is inserted before the extension:
-.I photo.jpg
-becomes
-.I photo_1.jpg
-and then
-.I photo_2.jpg
-on the next collision. Compound archive extensions are kept whole, so
-.I backup.tar.gz
-becomes
-.I backup_1.tar.gz
-and not
-.IR backup.tar_1.gz .
-.PP
-Files are processed in byte order of their names, which makes a run
-reproducible for a given directory content.
-.SH OPTIONS
-.TP
-.BR \-n ", " \-\-dry\-run
-Print the planned moves without touching the filesystem.
-.TP
-.BR \-h ", " \-\-help
-Print usage information and exit.
-.TP
-.BR \-V ", " \-\-version
-Print the version and exit.
-.TP
-.B \-\-device
-Print the storage device, mount point, filesystem and free space of
-.IR DIRECTORY ,
-then exit without moving any file.
-.TP
-.B \-\-
-End of options. Use it when
-.I DIRECTORY
-starts with a hyphen.
-.PP
-Options must appear before
-.IR DIRECTORY .
-.SH CATEGORIES
-The extension match is case insensitive and ignores the leading dot.
-.TP
-.B Images
-jpg, jpeg, png, gif, bmp, webp, svg, tif, tiff, heic, avif
-.TP
-.B Documents
-pdf, doc, docx, xls, xlsx, ppt, pptx, txt, md, rtf, odt, ods, odp,
-csv, epub
-.TP
-.B Music
-mp3, wav, flac, aac, ogg, m4a, opus, wma
-.TP
-.B Videos
-mp4, mkv, avi, mov, webm, m4v, wmv, flv
-.TP
-.B Archives
-zip, rar, 7z, tar, gz, bz2, xz, tgz, iso
-.TP
-.B Others
-every file that matches none of the above, including files without an
-extension
-.SH OUTPUT
-One line per moved file, in the form
-.RI "name " "-> " "Category/name" .
-In dry-run mode each line starts with
-.IR "[dry-run] " .
-A summary line follows:
-.RS
-.EX
-Moved 12 files: Images 5, Documents 4, Music 1, Videos 1, Archives 1.
-.EE
-.RE
-.PP
-Only non-empty categories appear in the summary. A dry run prints
-.RI "12 files would be moved" " instead."
+Everything else, including the output format and the exit status, is
+described in
+.BR organize (1).
 .SH EXIT STATUS
-.TP
-.B 0
-Every file was moved, or there was nothing to move.
-.TP
-.B 1
-At least one file could not be moved. The remaining files were still
-processed.
-.TP
-.B 2
-Invalid option or argument.
-.TP
-.B 3
-.I DIRECTORY
-does not exist or is not a directory.
-.SH EXAMPLES
-Sort the default downloads folder:
-.PP
-.RS
-.EX
-organize-dl
-.EE
-.RE
-.PP
-Preview what would happen, without moving anything:
-.PP
-.RS
-.EX
-organize-dl --dry-run
-.EE
-.RE
-.PP
-Show which storage device holds the files, and how much space is left:
-.PP
-.RS
-.EX
-organize-dl --device ~/Downloads
-.EE
-.RE
-.PP
-Sort another folder, whose name starts with a hyphen:
-.PP
-.RS
-.EX
-organize-dl -- -incoming
-.EE
-.RE
+The exit status of
+.BR organize (1).
 .SH SEE ALSO
-.BR mv (1),
-.BR mkdir (1)
+.BR organize (1)
 .SH LICENSE
 MIT. See
-.I /usr/share/doc/organize-dl/copyright
+.I /usr/share/doc/organize/copyright
 on a packaged install.

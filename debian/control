@@ -1,18 +1,25 @@
-Package: organize-dl
-Version: 0.1.0
+Package: organize
+Version: 0.2.0
 Architecture: all
 Maintainer: Ivanadrian31 <ivanadrian31@users.noreply.github.com>
 Installed-Size: 24
 Section: utils
 Priority: optional
 Depends: bash (>= 4.2)
+Replaces: organize-dl
+Conflicts: organize-dl
 Homepage: https://github.com/Ivanadrian31/organize
-Description: sort a downloads folder into category subfolders
- organize-dl moves the files of one directory into Images, Documents,
+Description: sort a directory into category subfolders
+ organize moves the files of one directory into Images, Documents,
  Music, Videos, Archives and Others subfolders, chosen from the file
- extension.
+ extension. The default directory is the current one.
  .
  Only regular files directly inside the directory are touched; hidden
  files, subdirectories and symlinks are left alone. An existing file is
  never overwritten: a collision becomes name_1.ext, name_2.ext and so
- on. A --dry-run flag prints the plan without moving anything.
+ on. A --preview flag prints the plan without moving anything, and
+ --images, --documents, --music, --videos, --archives and --others
+ restrict a run to one or more categories.
+ .
+ System directories and the root of a git repository are refused, and
+ files that a download manager is still writing are skipped.
