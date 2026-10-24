@@ -19,27 +19,19 @@
   <a href="#instalasi">Instalasi</a> ·
   <a href="#penggunaan">Penggunaan</a> ·
   <a href="#cara-kerja">Cara kerja</a> ·
-  <a href="#pengembangan">Pengembangan</a> ·
-  <a href="#rilis">Rilis</a> ·
   <a href="#troubleshooting">Troubleshooting</a> ·
-  <a href="#kontributor">Kontributor</a> ·
-  <a href="#lisensi">Lisensi</a>
+  <a href="#lisensi">Lisensi</a> ·
+  <a href="docs/CONTRIBUTING.md">Kontribusi</a>
 </p>
 
 ---
 
 ## Fitur
 
-- **Menyusun berdasarkan ekstensi.** Setiap berkas reguler di level teratas folder dipindah ke `Images/`, `Documents/`, `Music/`, `Videos/`, `Archives/`, atau `Others/` sesuai ekstensinya.
-- **Tidak pernah menimpa.** Kalau nama berkas sudah ada di subfolder tujuan, program memakai nama berikutnya yang kosong: `photo.jpg` menjadi `photo_1.jpg`, lalu `photo_2.jpg`. Ekstensi majemuk tetap utuh, jadi `backup.tar.gz` menjadi `backup_1.tar.gz`, bukan `backup.tar_1.gz`.
-- **Pratinjau dulu.** `--preview` menampilkan rencana tanpa memindahkan satu berkas pun, dan bisa digabung dengan flag kategori.
-- **Satu kategori saja.** `--images`, `--documents`, `--music`, `--videos`, `--archives`, dan `--others` membatasi run ke kategori yang disebut. Beberapa flag boleh dipakai bersamaan.
-- **Menolak folder yang salah.** Direktori sistem dan root repo git ditolak dengan kode keluar `4`, jadi run yang salah tidak bisa menyebarkan berkas sistem ke `Others/`.
-- **Melewati unduhan yang belum selesai.** Berkas `.part`, `.crdownload`, `.download`, `.tmp`, dan `.filepart` tidak pernah dipindahkan, karena pengunduh masih menulis ke berkas itu.
-- **Tidak menyentuh apa pun di luar folder target.** Subfolder, berkas tersembunyi, dan symlink dibiarkan apa adanya.
-- **Folder dibuat sesuai kebutuhan.** Folder yang hanya berisi gambar berakhir dengan satu subfolder `Images/`, bukan enam folder kosong.
-- **Melihat perangkat penyimpanan.** `--device` melaporkan block device, mount point, filesystem, dan ruang kosong di belakang folder target, lalu berhenti tanpa memindahkan berkas.
-- **Tanpa dependensi baru.** Hanya bash, `findmnt`, dan `df` dari paket yang sudah ada di Ubuntu.
+- Tidak pernah menimpa berkas. Kalau nama tujuan sudah dipakai, program memakai nama berikutnya yang kosong: `photo.jpg` menjadi `photo_1.jpg`, lalu `photo_2.jpg`. Ekstensi majemuk tetap utuh, jadi `backup.tar.gz` menjadi `backup_1.tar.gz`.
+- Tidak menyentuh apa pun di luar folder target. Subfolder, berkas tersembunyi, dan symlink dibiarkan apa adanya.
+- Melewati unduhan yang belum selesai. Berkas `.part`, `.crdownload`, `.download`, `.tmp`, dan `.filepart` tidak pernah dipindahkan, karena pengunduh masih menulis ke berkas itu.
+- Tanpa dependensi baru. Hanya bash, `findmnt`, dan `df` dari paket yang sudah ada di Ubuntu.
 
 ### Kategori dan ekstensi
 
@@ -56,7 +48,7 @@
 
 ## Instalasi
 
-### Paket Debian (Ubuntu 22.04 dan 24.04)
+### Paket Debian
 
 Unduh `organize_0.2.0_all.deb` dari
 [rilis terbaru](https://github.com/Ivanadrian31/organize/releases/latest), lalu:
@@ -74,15 +66,15 @@ Copot dengan `sudo apt remove organize`.
 ### Memperbarui dari 0.1.0
 
 Paket 0.2.0 bernama `organize` dan menyatakan `Replaces` serta `Conflicts`
-terhadap `organize-dl`, jadi memasangnya mencabut paket lama secara otomatis:
+terhadap `organize-dl`, jadi memasangnya mencabut paket lama secara otomatis.
+Tidak perlu mencopot `organize-dl` lebih dulu.
 
 ```sh
 sudo apt install ./organize_0.2.0_all.deb
 ```
 
-Tidak perlu mencopot `organize-dl` lebih dulu. Setelah itu perintahnya berubah
-dari `organize-dl` menjadi `organize`; nama lama tetap bekerja sebagai
-pembungkus yang mencetak peringatan.
+Perintahnya berubah dari `organize-dl` menjadi `organize`. Nama lama tetap
+bekerja sebagai pembungkus yang mencetak peringatan.
 
 ### Dari source
 
@@ -114,9 +106,9 @@ organize [OPTIONS] [DIRECTORY]
   --videos        only handle Videos
   --archives      only handle Archives
   --others        only handle Others
-  --device        show the storage device, filesystem and free space
-  -h, --help      show help
-  -V, --version   show the version
+  --device        show the storage device, filesystem and free space of DIRECTORY
+  -h, --help      show this help and exit
+  -V, --version   show the version and exit
   --              end of options; use before a DIRECTORY starting with '-'
 ```
 
@@ -153,9 +145,6 @@ track.mp3 -> Music/track.mp3
 Moved 8 files: Images 1, Documents 2, Music 1, Videos 1, Archives 1, Others 2.
 ```
 
-Berkas `photo.part` yang ada di folder yang sama tidak ikut dipindahkan dan
-tetap di tempatnya.
-
 ### Melihat rencana lebih dulu
 
 ```sh
@@ -169,22 +158,18 @@ organize --preview /path/ke/folder
 3 files would be moved: Images 1, Documents 1, Music 1.
 ```
 
-### Satu kategori saja
+### Satu kategori saja, atau folder lain
 
 ```sh
 organize --images
 organize --documents --archives ~/Tugas
-```
-
-Hanya kategori yang disebut yang dipindahkan; berkas kategori lain tetap di
-level teratas folder.
-
-### Folder lain
-
-```sh
 organize ~/Tugas
 organize -- -incoming
 ```
+
+Hanya kategori yang disebut yang dipindahkan; berkas kategori lain tetap di
+level teratas folder. Baris terakhir memakai `--` untuk folder yang namanya
+diawali tanda hubung.
 
 ### Melihat perangkat penyimpanan
 
@@ -192,15 +177,10 @@ organize -- -incoming
 organize --device ~/Downloads
 ```
 
-Keluaran di bawah ini diambil dari container Linux di atas block device ext4
-sungguhan, bukan dari filesystem container:
-
 ```
 device: /dev/sdd[/data/docker/volumes/organize-readme-demo/_data]
 mount: /root/Downloads
 fstype: ext4
-Filesystem      Size  Used Avail Use% Mounted on
-/dev/sdd       1007G   11G  945G   2% /root/Downloads
 ```
 
 ### Folder yang ditolak
@@ -209,21 +189,12 @@ Direktori sistem dan root repo git ditolak sebelum ada berkas yang dipindahkan:
 
 ```
 organize: refusing to work on "/etc": it is a system directory
-```
-
-```
 organize: refusing to work on "/home/bima/proyek": it is the root of a git repository
 ```
 
 Pencocokan dilakukan persis pada path yang sudah diresolusikan, jadi `$HOME`
 ditolak tetapi `$HOME/Downloads` tetap boleh, dan subfolder di dalam repo juga
 tetap boleh.
-
-Folder target yang tidak ada menghasilkan pesan galat dan kode keluar `3`:
-
-```
-organize: directory "/root/TidakAda" not found
-```
 
 ---
 
@@ -268,86 +239,23 @@ folder yang sama selalu menghasilkan hasil yang sama.
 
 ---
 
-## Pengembangan
-
-Semua pemeriksaan berjalan di dalam Docker, jadi mesin pembuat hanya butuh
-Docker.
-
-| Perintah | Yang dikerjakan |
-|---|---|
-| `make versi` | memastikan versi di empat tempat sama |
-| `make check` | shellcheck pada severity style, lalu seluruh test bats |
-| `make man` | membangun man page tanpa peringatan |
-| `make deb` | membangun `dist/organize_0.2.0_all.deb` |
-| `make lint` | menjalankan lintian pada paket yang dibangun |
-| `make uji-pasang` | memasang paket di container Ubuntu yang bersih lalu mengujinya |
-
-Gate lengkap, di dua rilis Ubuntu yang didukung:
-
-```sh
-docker run --rm -v "$(cygpath -m "$PWD"):/src" -w /src ubuntu:24.04 bash -c \
-  'apt-get update -qq >/dev/null 2>&1 && apt-get install -y -qq bats shellcheck make groff-base lintian dpkg-dev >/dev/null 2>&1 && chmod +x bin/organize bin/organize-dl tests/pasang-bersih.sh && make versi check man deb lint'
-
-docker run --rm -v "$(cygpath -m "$PWD"):/src" -w /src ubuntu:22.04 bash -c \
-  'apt-get update -qq >/dev/null 2>&1 && apt-get install -y -qq bats shellcheck make groff-base lintian dpkg-dev >/dev/null 2>&1 && chmod +x bin/organize bin/organize-dl tests/pasang-bersih.sh && make versi check man deb lint'
-
-bash tests/pasang-bersih.sh
-```
-
-Di Linux, `$(cygpath -m "$PWD")` tidak diperlukan dan cukup menulis
-`-v "$PWD:/src"`.
-
-Test bats ada di `tests/organize.bats`, helper-nya di `tests/helper.bash`, dan
-test pemasangan bersih di `tests/pasang-bersih.sh`.
-
----
-
-## Rilis
-
-Versi hidup di empat tempat dan harus selalu sama: `VERSION` di `Makefile`,
-`VERSION` di `bin/organize`, `Version:` di `debian/control`, dan baris pertama
-`debian/changelog`. `make versi` memeriksa keempatnya.
-
-Rilis dimulai dari tag beranotasi:
-
-```sh
-git tag -a v0.2.0 -m "v0.2.0"
-git push origin v0.2.0
-```
-
-Workflow `release` membangun paket di `ubuntu-22.04` lalu menempelkannya ke
-rilis GitHub yang baru.
-
----
-
 ## Troubleshooting
 
 | Masalah | Solusi |
 |---|---|
-| `organize: command not found` | Paket belum terpasang. Jalankan `sudo apt install ./organize_0.2.0_all.deb`, atau tambahkan `/usr/local/bin` ke `PATH`. |
+| `organize: command not found` | Paket belum terpasang. Pasang berkas `.deb` terbaru dari halaman rilis, atau tambahkan `/usr/local/bin` ke `PATH`. |
 | `organize: directory "..." not found` | Folder target tidak ada atau bukan direktori. Cek jalurnya; kode keluar untuk kondisi ini adalah `3`. |
 | `organize: refusing to work on "..."` | Folder itu direktori sistem atau root repo git. Pindah ke subfolder yang ingin dirapikan, atau sebutkan folder lain sebagai `DIRECTORY`. Kode keluarnya `4`. |
 | `organize: option "--dry-run" was renamed` | Nama lama sudah diganti. Pakai `--preview` atau `-p`. Pembungkus `organize-dl` masih menerjemahkan `--dry-run`. |
 | `organize: unknown option "..."` | Opsi harus ditulis sebelum `DIRECTORY`. Untuk folder yang namanya diawali `-`, pakai `organize -- -namafolder`. |
-| `organize: cannot move "..."` | Berkas tidak bisa dipindahkan, mungkin karena permission atau berkas sedang dipakai. Pesan galat ditulis ke stderr, berkas lain tetap diproses, dan kode keluar menjadi `1`. |
+| `organize: cannot move "..."` | Berkas tidak bisa dipindahkan, mungkin karena permission atau berkas sedang dipakai. Berkas lain tetap diproses, dan kode keluar menjadi `1`. |
 | `organize: cannot create directory "..."` | Subfolder kategori tidak bisa dibuat. Periksa permission folder target. |
-| Berkas `.part` tidak ikut dipindahkan | Itu disengaja. Berkas yang masih ditulis pengunduh dilewati, termasuk saat `--others` diberikan. |
-| `--device` menampilkan `overlay` | Output itu berasal dari filesystem container, bukan disk yang sebenarnya. Jalankan flag ini di mesin yang memegang berkasnya. |
-| Nama berkas mendapat akhiran angka | Nama itu sudah dipakai di subfolder tujuan, jadi program memilih nama berikutnya yang kosong. |
-| Completion bash tidak aktif | completion terpasang di `/usr/share/bash-completion/completions`. Muat ulang shell, atau jalankan `source /usr/share/bash-completion/completions/organize`. |
-| `make versi` gagal | Versi di empat tempat tidak sama. Jalankan `make versi` untuk melihat nilai masing-masing tempat. |
-
----
-
-## Kontributor
-
-| Nama | GitHub |
-|---|---|
-| Ivan Adrian Bhagaskara | [@Ivanadrian31](https://github.com/Ivanadrian31) |
-| Bima Adji Kusuma | [@bimadji](https://github.com/bimadji) |
 
 ---
 
 ## Lisensi
 
 MIT, lihat [LICENSE](LICENSE).
+
+Cara menyumbang kode, menjalankan pemeriksaan, dan merilis versi baru ada di
+[docs/CONTRIBUTING.md](docs/CONTRIBUTING.md).
