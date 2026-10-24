@@ -273,11 +273,10 @@ teardown() {
 	[[ $output == *'unknown option'* ]]
 }
 
-@test "dry-run is reported as renamed" {
+@test "dry-run points at preview" {
 	run "$BIN" --dry-run "$DL"
 	[ "$status" -eq 2 ]
-	[[ $output == *'renamed'* ]]
-	[[ $output == *'--preview'* ]]
+	[[ $output == *'is now --preview'* ]]
 }
 
 @test "double dash allows a directory starting with a dash" {

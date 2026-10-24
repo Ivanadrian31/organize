@@ -1,5 +1,5 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-Upstream-Name: organize-dl
+Upstream-Name: organize
 Source: https://github.com/Ivanadrian31/organize
 
 Files: *

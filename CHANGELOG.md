@@ -25,12 +25,9 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Files a download manager is still writing (`.part`, `.crdownload`,
   `.download`, `.tmp`, `.filepart`) are always skipped.
 
-### Unchanged
-
-- Category folders and the extension mapping.
-- Numeric suffix on collisions (`photo_1.jpg`), never overwriting.
-- Compound archive extensions kept whole (`backup_1.tar.gz`).
-- Hidden files, subdirectories and symlinks are left alone.
+Category folders and the extension mapping did not change, and neither did
+the collision suffix or the handling of hidden files, subdirectories and
+symlinks.
 
 ## [0.1.0] - 2026-10-23
 
