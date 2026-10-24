@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://github.com/Ivanadrian31/organize/releases/latest"><img src="https://img.shields.io/github/v/release/Ivanadrian31/organize" alt="Rilis terbaru"></a>
-  <a href="https://github.com/Ivanadrian31/organize/actions/workflows/ci.yml"><img src="https://github.com/Ivanadrian31/organize/actions/workflows/ci.yml/badge.svg" alt="Status CI: passing"></a>
+  <a href="https://github.com/Ivanadrian31/organize/actions/workflows/ci.yml"><img src="https://github.com/Ivanadrian31/organize/actions/workflows/ci.yml/badge.svg" alt="Status CI"></a>
   <img src="https://img.shields.io/badge/Ubuntu-22.04%20%7C%2024.04-orange?logo=ubuntu" alt="Ubuntu 22.04 dan 24.04">
   <img src="https://img.shields.io/badge/bash-4.2%2B-green?logo=gnubash" alt="Bash 4.2 atau lebih baru">
   <a href="LICENSE"><img src="https://img.shields.io/github/license/Ivanadrian31/organize" alt="Lisensi MIT"></a>
@@ -12,7 +12,7 @@
 
 <p align="center"><b>Menyusun berkas di satu folder ke subfolder kategorinya, tanpa pernah menimpa berkas yang sudah ada.</b></p>
 
-<p align="center">Skrip bash untuk Ubuntu 22.04 dan 24.04, distribusi Debian, tanpa dependensi baru.</p>
+<p align="center">Paket <code>.deb</code> untuk Ubuntu 22.04 dan 24.04, tanpa dependensi di luar paket dasar.</p>
 
 <p align="center">
   <a href="#fitur">Fitur</a> ·
@@ -31,7 +31,7 @@
 - Tidak pernah menimpa berkas. Kalau nama tujuan sudah dipakai, program memakai nama berikutnya yang kosong: `photo.jpg` menjadi `photo_1.jpg`, lalu `photo_2.jpg`. Ekstensi majemuk tetap utuh, jadi `backup.tar.gz` menjadi `backup_1.tar.gz`.
 - Tidak menyentuh apa pun di luar folder target. Subfolder, berkas tersembunyi, dan symlink dibiarkan apa adanya.
 - Melewati unduhan yang belum selesai. Berkas `.part`, `.crdownload`, `.download`, `.tmp`, dan `.filepart` tidak pernah dipindahkan, karena pengunduh masih menulis ke berkas itu.
-- Tanpa dependensi baru. Hanya bash, `findmnt`, dan `df` dari paket yang sudah ada di Ubuntu.
+- Hanya memakai bash, `findmnt`, dan `df`, semuanya sudah ada di Ubuntu.
 
 ### Kategori dan ekstensi
 
@@ -129,9 +129,9 @@ kerja saat ini. Tanpa flag kategori, keenam kategori diproses.
 organize
 ```
 
-Contoh keluaran dari run nyata, dengan `Documents/invoice.pdf` dan
-`Archives/backup.tar.gz` yang sudah ada sebelumnya sehingga kedua berkas baru
-disimpan dengan akhiran `_1`:
+Contoh di bawah dijalankan sungguhan. `Documents/invoice.pdf` dan
+`Archives/backup.tar.gz` sudah ada sebelumnya, jadi kedua berkas baru disimpan
+dengan akhiran `_1`:
 
 ```
 backup.tar.gz -> Archives/backup_1.tar.gz
@@ -167,9 +167,8 @@ organize ~/Tugas
 organize -- -incoming
 ```
 
-Hanya kategori yang disebut yang dipindahkan; berkas kategori lain tetap di
-level teratas folder. Baris terakhir memakai `--` untuk folder yang namanya
-diawali tanda hubung.
+Kategori lain tidak disentuh. Baris terakhir memakai `--` untuk folder yang
+namanya diawali tanda hubung.
 
 ### Melihat perangkat penyimpanan
 
@@ -178,9 +177,11 @@ organize --device ~/Downloads
 ```
 
 ```
-device: /dev/sdd[/data/docker/volumes/organize-readme-demo/_data]
+device: /dev/sdd[/data/docker/volumes/organize-audit/_data]
 mount: /root/Downloads
 fstype: ext4
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/sdd       1007G   11G  945G   2% /root/Downloads
 ```
 
 ### Folder yang ditolak
@@ -192,9 +193,9 @@ organize: refusing to work on "/etc": it is a system directory
 organize: refusing to work on "/home/bima/proyek": it is the root of a git repository
 ```
 
-Pencocokan dilakukan persis pada path yang sudah diresolusikan, jadi `$HOME`
-ditolak tetapi `$HOME/Downloads` tetap boleh, dan subfolder di dalam repo juga
-tetap boleh.
+Program membandingkan path setelah symlink diselesaikan, jadi `$HOME` ditolak
+tetapi `$HOME/Downloads` tetap boleh, dan subfolder di dalam repo juga tetap
+boleh.
 
 ---
 
@@ -234,8 +235,8 @@ flowchart TD
     T --> V["Keluar dengan kode 0"]
 ```
 
-Berkas diproses menurut urutan byte nama berkasnya, sehingga run dengan isi
-folder yang sama selalu menghasilkan hasil yang sama.
+Program membaca berkas dalam urutan byte nama, jadi isi folder yang sama
+menghasilkan urutan yang sama.
 
 ---
 
@@ -246,7 +247,7 @@ folder yang sama selalu menghasilkan hasil yang sama.
 | `organize: command not found` | Paket belum terpasang. Pasang berkas `.deb` terbaru dari halaman rilis, atau tambahkan `/usr/local/bin` ke `PATH`. |
 | `organize: directory "..." not found` | Folder target tidak ada atau bukan direktori. Cek jalurnya; kode keluar untuk kondisi ini adalah `3`. |
 | `organize: refusing to work on "..."` | Folder itu direktori sistem atau root repo git. Pindah ke subfolder yang ingin dirapikan, atau sebutkan folder lain sebagai `DIRECTORY`. Kode keluarnya `4`. |
-| `organize: option "--dry-run" was renamed` | Nama lama sudah diganti. Pakai `--preview` atau `-p`. Pembungkus `organize-dl` masih menerjemahkan `--dry-run`. |
+| `organize: option "--dry-run" is now --preview` | Pakai `--preview` atau `-p`. Pembungkus `organize-dl` masih menerjemahkan `--dry-run`. |
 | `organize: unknown option "..."` | Opsi harus ditulis sebelum `DIRECTORY`. Untuk folder yang namanya diawali `-`, pakai `organize -- -namafolder`. |
 | `organize: cannot move "..."` | Berkas tidak bisa dipindahkan, mungkin karena permission atau berkas sedang dipakai. Berkas lain tetap diproses, dan kode keluar menjadi `1`. |
 | `organize: cannot create directory "..."` | Subfolder kategori tidak bisa dibuat. Periksa permission folder target. |

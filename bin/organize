@@ -19,9 +19,9 @@ readonly EXT_PARTIAL="part crdownload download tmp filepart"
 # Order matters: it is the order used in the summary line.
 readonly CATEGORIES=(Images Documents Music Videos Archives Others)
 
-# Sorted directories are always a mistake, so they are refused outright.
-# Each entry is compared after readlink -f, and /bin, /sbin and /lib are
-# symlinks into /usr on Ubuntu, so the list is resolved the same way.
+# Sorting these directories is always a mistake, so they are refused.
+# Entries are compared after readlink -f, because /bin, /sbin and /lib are
+# symlinks into /usr on Ubuntu.
 readonly DENY_DIRS=(/ /etc /usr /var /bin /sbin /lib /opt /srv /boot /dev /proc /sys /run)
 
 usage() {
@@ -46,14 +46,9 @@ Options:
 
 Options must come before DIRECTORY.
 
-Without a category option every category is handled. With one or more
-category options only those categories are handled, and files of the other
-categories stay where they are.
-
-Files that a download manager is still writing are always skipped, even with
---others: .part, .crdownload, .download, .tmp and .filepart.
-
-With --device the program reports where DIRECTORY lives and exits without
+Without a category option every category is handled; with one or more, only
+those. Files a download manager is still writing are always skipped: .part,
+.crdownload, .download, .tmp, .filepart. --device reports and exits without
 moving a file.
 
 Categories and extensions (case-insensitive):
@@ -89,10 +84,6 @@ die_opsi() {
 # kategori_untuk EXT -> sets KATEGORI
 kategori_untuk() {
 	local e=$1
-	if [[ -z $e ]]; then
-		KATEGORI=Others
-		return 0
-	fi
 	case " $EXT_IMAGES " in *" $e "*) KATEGORI=Images; return 0 ;; esac
 	case " $EXT_DOCUMENTS " in *" $e "*) KATEGORI=Documents; return 0 ;; esac
 	case " $EXT_MUSIC " in *" $e "*) KATEGORI=Music; return 0 ;; esac
@@ -275,14 +266,8 @@ while (($#)); do
 		shift
 		;;
 	--images | --documents | --music | --videos | --archives | --others)
-		case $1 in
-		--images) dipilih[Images]=1 ;;
-		--documents) dipilih[Documents]=1 ;;
-		--music) dipilih[Music]=1 ;;
-		--videos) dipilih[Videos]=1 ;;
-		--archives) dipilih[Archives]=1 ;;
-		--others) dipilih[Others]=1 ;;
-		esac
+		kategori=${1#--}
+		dipilih[${kategori^}]=1
 		hanya=1
 		shift
 		;;
@@ -291,7 +276,7 @@ while (($#)); do
 		shift
 		;;
 	-n | --dry-run)
-		die_opsi "option \"$1\" was renamed, use --preview"
+		die_opsi "option \"$1\" is now --preview"
 		;;
 	-h | --help)
 		usage

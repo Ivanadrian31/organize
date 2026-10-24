@@ -1,13 +1,12 @@
 # Panduan kontribusi
 
-Dokumen ini untuk orang yang mengubah kode `organize`, menjalankan
-pemeriksaannya, atau merilis versi baru. Untuk cara memakai alatnya, lihat
-[README](../README.md).
+Untuk cara memakai alatnya, lihat [README](../README.md).
 
 ## Lingkungan
 
 Skrip menargetkan bash 4.2 dan berjalan di Ubuntu 22.04 dan 24.04. Semua
-pemeriksaan berjalan di dalam Docker, jadi mesin pembuat hanya butuh Docker.
+pemeriksaan berjalan di dalam Docker, jadi mesin yang mengerjakan perubahan
+hanya butuh Docker.
 
 ## Pemeriksaan
 
@@ -20,7 +19,7 @@ pemeriksaan berjalan di dalam Docker, jadi mesin pembuat hanya butuh Docker.
 | `make lint` | menjalankan lintian pada paket yang dibangun |
 | `make uji-pasang` | memasang paket di container Ubuntu yang bersih lalu mengujinya |
 
-Gate lengkap, di dua rilis Ubuntu yang didukung:
+Pemeriksaan lengkap, di dua rilis Ubuntu yang didukung:
 
 ```sh
 docker run --rm -v "$(cygpath -m "$PWD"):/src" -w /src ubuntu:24.04 bash -c \
